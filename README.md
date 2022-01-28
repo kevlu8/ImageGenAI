@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # HentAI
 =======
 # ImageGenAI
@@ -14,5 +13,3 @@ We are using PyTorch to build the neural network.
 If you want pre-trained models, go [here](https://kevlu8.herokuapp.com/ai/ImageGenAI/models)
 (Currently not developed yet)
 
-
->>>>>>> d86cfc75163690fa21407e204887719136671609
