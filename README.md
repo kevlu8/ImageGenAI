@@ -1,5 +1,3 @@
-# HentAI
-=======
 # ImageGenAI
 
 Hello! This is a school project made by two junior high boys.
