@@ -3,6 +3,7 @@
 import os
 import json
 import cv2
+import PIL
 
 import torch
 from torch import nn, optim
@@ -11,6 +12,8 @@ from torchvision.transforms import transforms
 
 import numpy as np
 from tqdm import tqdm
+
+MAX_HEIGHT, MAX_WIDTH = 1080, 1920
 
 class Net(nn.Module):
     def __init__(self):
@@ -37,47 +40,75 @@ class Net(nn.Module):
     def forward(self, x):
         return self.main(x)
 
+def convertAndScale(filename):
+    try:
+        img = PIL.Image.open(filename[0])
+    except:
+        print("Weird.")
+        return
+    width, height = img.size
+    if width > MAX_WIDTH or height > MAX_HEIGHT:
+        print("Need to resize")
+        scale = max(width, height) / min(MAX_WIDTH, MAX_HEIGHT)
+        if width / scale > MAX_WIDTH or height / scale > MAX_HEIGHT:
+            scale = max(width, height) / max(MAX_WIDTH, MAX_HEIGHT)
+        print(scale)
+        img = img.resize((
+            math.floor(width / scale),
+            math.floor(height / scale)
+        ))
+        print(img)
+        if filename[0] != filename[1]:
+            print("Filename is weird")
+            img.save(filename[0], "png")
+            copyfile(filename[0], filename[0][:-4] + ".png")
+        else:
+            file = filename[0] + ".png"
+            # pil_image = PIL.Image.open(filename[0])
+            img.save(file, "png")
+            copyfile(file, filename[0][:-4] + ".png")
+            os.remove(filename[0])
+            filename = (file, filename[0][:-4] + ".png")
+    elif filename[0].lower().endswith((".jpg", ".jpeg")):
+        print("No resize")
+        # Save the png to the temp file
+        # pil_image = PIL.Image.open(filename[0])
+        # pil_image.save(file, "png")
+        file = filename[0] + ".png"
+        # pil_image = PIL.Image.open(filename[0])
+        img.save(file, "png")
+        copyfile(file, filename[0][:-4] + ".png")
+        os.remove(filename[0])
+        filename = (file, filename[0][:-4] + ".png")
+    print(filename)
 
-class ImageDataset(Dataset):
-    def __init__(self):
-        with open(os.path.join("data", "labels.json")) as f:
-            self.labels = json.load(f)
-        with open("tags.txt") as f:
-            self.tags = f.read().split("\n")
-        self.imgs = tuple(self.labels.keys())
-        self.img_dir = "data/imgs"
-    
-    def __len__(self):
-        return len(self.labels)
-    
-    def __getitem__(self, i):
-        img_path = os.path.join(self.img_dir, self.imgs[i]) + ".jpg"
-        image = transforms.F.to_tensor(cv2.imread(img_path))
-        if image.shape != (3, 256, 256):
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        # label = torch.Tensor(self.target_transform(set(self.labels[os.path.basename(img_path).split(".")[0]])))
-        label = torch.Tensor(self.labels[os.path.basename(img_path)[:-4]])
-        return image, label
-    
-    def target_transform(self, labels):
-        label = [0.] * len(self.tags)
-        for i, t in enumerate(self.tags):
-            if t in labels:
-                label[i] = 1.
-        return label
+def fixFiles():
+    folder = "data/imgs/hentai/"
+    cwd = os.getcwd()
+    os.chdir(folder)
+    file_list = os.listdir(".")
+
+    for file in file_list:
+        if not file.endswith((".png", ".jpg", ".jpeg")):
+            os.remove(file)
+        elif file.endswith((".jpg", ".jpeg")):
+            fullPath = os.path.join(folder, file)
+            convertAndScale((fullPath, fullPath))
+        else:
+            fullPath = os.path.join(folder, file)
+            convertAndScale((fullPath, fullPath))
+    os.chdir(cwd)
+    print("Fixfiles ran")
 
 
 def main():
     if not os.path.exists("data"):
         print("You don't have a data folder!")
         exit()
-
-    if not os.path.exists("data/labels.json"):
-        print("You don't have any labels!")
-        exit()
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # device = "cpu"
+    
+    fixFiles()
 
     dataloader = DataLoader(ImageDataset(), 64, True)
 
@@ -96,7 +127,6 @@ def main():
 
     epochs = 25
 
-
     for epoch in range(epochs):
         for image, label in tqdm(dataloader):
             image = image.to(device)
@@ -106,15 +136,12 @@ def main():
             loss = criterion(output, label)
             loss.backward()
             optimizer.step()
-            # let me copyu from wiki real quick 
-            # ^ programmer mindset
         model.cpu()
         torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, "weights.pth")
         model.to(device)
 
     model.cpu()
     torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict()}, "weights.pth")
-    # weights.pth now has proper values
     model.to(device)
     model.eval()
     print(model(torch.Tensor(np.zeros((1, 3, 256, 256))).to(device)).cpu())

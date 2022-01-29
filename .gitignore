@@ -1,6 +1,10 @@
 push
 update
 __pycache__/
+data/
+.git/
+datahoard.py
+*.pth
 
 # Prerequisites
 *.d

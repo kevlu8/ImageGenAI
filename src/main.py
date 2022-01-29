@@ -13,44 +13,6 @@ import math
 import time
 import os
 
-eventQueue = []
-MAX_HEIGHT, MAX_WIDTH = 852, 480 # 480p
-
-
-def handler(sig, frame):
-    eventQueue.append(("SIGINT", frame))
-    return signal.SIG_IGN
-
-def convertAndScale(filename):
-    img = PIL.Image.open(filename[0])
-    width, height = img.size
-    if width > MAX_WIDTH or height > MAX_HEIGHT:
-        scale = max(width, height) / min(MAX_WIDTH, MAX_HEIGHT)
-        if width / scale > MAX_WIDTH or height / scale > MAX_HEIGHT:
-            scale = max(width, height) / max(MAX_WIDTH, MAX_HEIGHT)
-        img = img.resize((
-            math.floor(width / scale),
-            math.floor(height / scale)
-        ))
-        if filename[0] != filename[1]:
-            img.save(filename[0], "png")
-        else:
-            fd, file = tempfile.mkstemp()
-            os.close(fd)
-            filename = (file, filename[0])
-            img.save(filename[0], "png")
-    elif filename[0].lower().endswith((".jpg", ".jpeg")):
-        fd, file = tempfile.mkstemp()
-        os.close(fd)
-
-        # Save the png to the temp file
-        pil_image = PIL.Image.open(filename[0])
-        pil_image.save(file, "png")
-
-        filename = (file, filename[0])
-    eventQueue.append(("convertAndScale finished", {"filename": filename}))
-
-
 def main():
     signal.signal(signal.SIGINT, handler)
     appWindow = window.createWindow()
