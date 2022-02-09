@@ -5,7 +5,7 @@ data/
 .git/
 datahoard.py
 *.pth
-model/
+output/
 
 # Prerequisites
 *.d
