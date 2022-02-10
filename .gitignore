@@ -4,7 +4,7 @@ __pycache__/
 data/
 .git/
 datahoard.py
-*.pth
+# *.pth
 output/
 
 # Prerequisites
