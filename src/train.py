@@ -1,5 +1,11 @@
 from __future__ import print_function
 import train
+import argparse
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument('--server', help='data directory', action='store_true')
+args = argparser.parse_args()
+server = args.server
 
 if __name__ == "__main__":
 	extractor = train.main()
@@ -21,6 +27,10 @@ def main():
     import torchvision.utils as vutils
     import numpy as np
     import matplotlib.pyplot as plt
+    
+    if server:
+        torch.set_num_interop_threads(16)
+        torch.set_num_threads(16)
 
     # Set random seed for reproducibility
     rseed = random.randint(1, 10000) # use if you want new results
