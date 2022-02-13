@@ -1,19 +1,9 @@
+# Train
 from __future__ import print_function
-import train
-import argparse
-
-argparser = argparse.ArgumentParser()
-argparser.add_argument('--server', help='data directory', action='store_true')
-args = argparser.parse_args()
-server = args.server
-
-if __name__ == "__main__":
-	extractor = train.main()
-	extractor.runInParallel(numProcesses=2, numThreads=4)
+server = input("Is this script running on a dedicated server? (y/n): ") == "y"
 
 def main():
     #%matplotlib inline
-    import argparse
     import os
     import random
     import torch
@@ -29,8 +19,8 @@ def main():
     import matplotlib.pyplot as plt
     
     if server:
-        torch.set_num_interop_threads(16)
-        torch.set_num_threads(16)
+        torch.set_num_interop_threads(64)
+        torch.set_num_threads(64)
 
     # Set random seed for reproducibility
     rseed = random.randint(1, 10000) # use if you want new results
@@ -42,10 +32,10 @@ def main():
     dataroot = "data/imgs/"
 
     # Number of workers for dataloader
-    workers = 4
+    workers = 2
 
     # Batch size during training
-    batch_size = 700
+    batch_size = 64
 
     # Spatial size of training images. All images will be resized to this
     #   size using a transformer.
@@ -125,8 +115,25 @@ def main():
                 nn.ReLU(True),
                 # state size. (ngf) x 32 x 32
                 nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
-                nn.Tanh()
+                nn.Tanh(),
                 # state size. (nc) x 64 x 64
+                # nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
+                # nn.Tanh(),
+                # # state size. (nc) x 128 x 128
+                # nn.ConvTranspose2d( nc, nc, 4, 2, 1, bias=False),
+                # nn.Tanh(),
+                # # state size. (nc) x 256 x 256
+                # nn.ConvTranspose2d( nc, nc, 4, 2, 1, bias=False),
+                # nn.Tanh(),
+                # # state size. (nc) x 512 x 512
+                # nn.ConvTranspose2d( nc, nc, 4, 2, 1, bias=False),
+                # nn.Tanh(),
+                # # state size. (nc) x 1024 x 1024
+                # nn.ConvTranspose2d( nc, nc, 4, 2, 1, bias=False),
+                # nn.Tanh(),
+                # # state size. (nc) x 2048 x 2048
+                # nn.ConvTranspose2d( nc, nc, 4, 2, 1, bias=False),
+                # nn.Tanh()
             )
 
         def forward(self, input):
@@ -138,6 +145,7 @@ def main():
     # Handle multi-gpu if desired
     if (device.type == 'cuda') and (ngpu > 1):
         netG = nn.DataParallel(netG, list(range(ngpu)))
+        print('cuda')
 
     # Apply the weights_init function to randomly initialize all weights
     #  to mean=0, stdev=0.02.
@@ -151,6 +159,21 @@ def main():
             super(Discriminator, self).__init__()
             self.ngpu = ngpu
             self.main = nn.Sequential(
+                # # input is (nc) x 2048 x 2048
+                # nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                # nn.LeakyReLU(0.2, inplace=True),
+                # # input is (nc) x 1024 x 1024
+                # nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                # nn.LeakyReLU(0.2, inplace=True),
+                # # input is (nc) x 512 x 512
+                # nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                # nn.LeakyReLU(0.2, inplace=True),
+                # # input is (nc) x 256 x 256
+                # nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                # nn.LeakyReLU(0.2, inplace=True),
+                # # input is (nc) x 128 x 128
+                # nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                # nn.LeakyReLU(0.2, inplace=True),
                 # input is (nc) x 64 x 64
                 nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
                 nn.LeakyReLU(0.2, inplace=True),
@@ -193,7 +216,7 @@ def main():
 
     # Create batch of latent vectors that we will use to visualize
     #  the progression of the generator
-    fixed_noise = torch.randn(64, nz, 1, 1, device=device)
+    fixed_noise = torch.randn(64, nz, 1, 1, device=device) # arg1 = 64
 
     # Establish convention for real and fake labels during training
     real_label = 1.
@@ -212,14 +235,14 @@ def main():
     iters = 0
 
     if os.path.exists('models/generator.pth'):
-        netG.load_state_dict(torch.load("models/generator.pth")["model"])
+        netG.load_state_dict(torch.load("models/generator.pth", map_location=device)["model"])
         netG.train()
-        optimizerG.load_state_dict(torch.load("models/generator.pth")["optimizer"])
+        optimizerG.load_state_dict(torch.load("models/generator.pth", map_location=device)["optimizer"])
 
     if os.path.exists('models/discriminator.pth'):
-        netD.load_state_dict(torch.load("models/discriminator.pth")["model"])
+        netD.load_state_dict(torch.load("models/discriminator.pth", map_location=device)["model"])
         netD.train()
-        optimizerD.load_state_dict(torch.load("models/discriminator.pth")["optimizer"])
+        optimizerD.load_state_dict(torch.load("models/discriminator.pth", map_location=device)["optimizer"])
 
     print("Starting Training Loop...")
     # For each epoch
@@ -283,6 +306,16 @@ def main():
                     print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
                         % (epoch, num_epochs, i, len(dataloader),
                             errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+                    
+                if i % 10 == 0:
+                    if not os.path.exists("models/discriminator.pth"):
+                      with open("models/discriminator.pth", 'x') as f:
+                        pass
+                      with open("models/generator.pth", 'x') as g:
+                        pass
+                
+                    torch.save({"model": netD.state_dict(), "optimizer": optimizerD.state_dict()}, "models/discriminator.pth")
+                    torch.save({"model": netG.state_dict(), "optimizer": optimizerG.state_dict()}, "models/generator.pth")
 
                 # Save Losses for plotting later
                 G_losses.append(errG.item())
@@ -323,11 +356,7 @@ def main():
     plt.xlabel("iterations")
     plt.ylabel("Loss")
     plt.legend()
+    plt.savefig("models/loss.png")
     plt.show()
-
-    # Plot the fake images from the last epoch
-    plt.subplot(1,2,2)
-    plt.axis("off")
-    plt.title("Fake Images")
-    plt.imshow(np.transpose(img_list[-1],(1,2,0)))
-    plt.show()
+    
+main()

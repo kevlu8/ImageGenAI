@@ -8,8 +8,8 @@ import torch.optim as optim
 import torch.utils.data
 import torchvision.utils as vutils
 
-# Set random seed for reproducibility
-rseed = random.randint(1, 10000) # use if you want new results
+# Set random seed for new images
+rseed = random.randint(1, 10000)
 print("Random Seed: ", rseed)
 random.seed(rseed)
 torch.manual_seed(rseed)
@@ -73,74 +73,32 @@ class Generator(nn.Module):
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
             nn.Tanh()
-            # state size. (nc) x 64 x 64
-        )
-
-    def forward(self, input):
-        return self.main(input)
-
-class Discriminator(nn.Module):
-    def __init__(self, ngpu):
-        super(Discriminator, self).__init__()
-        self.ngpu = ngpu
-        self.main = nn.Sequential(
-            # input is (nc) x 64 x 64
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf) x 32 x 32
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 2),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*2) x 16 x 16
-            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 4),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*4) x 8 x 8
-            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*8) x 4 x 4
-            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
+            # state size. (ngf) x 64 x 64
         )
 
     def forward(self, input):
         return self.main(input)
 
 netG = Generator(ngpu).to(device)
-netD = Discriminator(ngpu).to(device)
-optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
-optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
 if os.path.exists('models/generator.pth'):
-    netG.load_state_dict(torch.load("models/generator.pth")["model"])
+    netG.load_state_dict(torch.load("models/generator.pth", map_location=device)["model"])
     netG.eval()
-    optimizerG.load_state_dict(torch.load("models/generator.pth")["optimizer"])
 else:
     print("No previous model found")
+    exit()
 
-if os.path.exists('models/discriminator.pth'):
-    netD.load_state_dict(torch.load("models/discriminator.pth")["model"])
-    netD.eval()
-    optimizerD.load_state_dict(torch.load("models/discriminator.pth")["optimizer"])
-else:
-    print("No previous model found")
-
-gen = Generator(ngpu).to(device)
-gen.load_state_dict(torch.load("models/generator.pth", "cpu")["model"])
-gen.eval()
-
-discrim = Discriminator(ngpu).to(device)
-discrim.load_state_dict(torch.load("models/discriminator.pth", "cpu")["model"])
-discrim.eval()
+# gen = Generator(ngpu).to(device)
+# gen.load_state_dict(torch.load("models/generator.pth", map_location=device)["model"])
+# gen.eval()
 
 output = []
 
-# Using the generator, generate 100 images.
+# Generate images
 for i in range(104):
     print("Generating image " + str(i + 1))
     noise = torch.randn(1, nz, 1, 1, device=device)
-    gen_img = gen(noise)
+    gen_img = netG(noise)
     output.append(gen_img.detach().cpu())
 
 # Save the images to output/
