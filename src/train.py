@@ -15,7 +15,6 @@ def main():
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
     import torchvision.utils as vutils
-    import numpy as np
     import matplotlib.pyplot as plt
     
     if server:
