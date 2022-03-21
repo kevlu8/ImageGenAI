@@ -1,5 +1,6 @@
 # Train
 from __future__ import print_function
+import sys
 server = input("Is this script running on a dedicated server? (y/n): ") == "y"
 
 def main():
@@ -338,7 +339,7 @@ def main():
         
             torch.save({"model": netD.state_dict(), "optimizer": optimizerD.state_dict()}, "models/discriminator.pth")
             torch.save({"model": netG.state_dict(), "optimizer": optimizerG.state_dict()}, "models/generator.pth")
-            exit()
+            sys.exit()
 
     if not os.path.exists("models/discriminator.pth"):
         with open("models/discriminator.pth", 'x') as f:
