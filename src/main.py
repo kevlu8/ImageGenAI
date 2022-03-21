@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import random
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -86,7 +87,7 @@ if os.path.exists('models/generator.pth'):
     netG.eval()
 else:
     print("No previous model found")
-    exit()
+    sys.exit()
 
 # gen = Generator(ngpu).to(device)
 # gen.load_state_dict(torch.load("models/generator.pth", map_location=device)["model"])
